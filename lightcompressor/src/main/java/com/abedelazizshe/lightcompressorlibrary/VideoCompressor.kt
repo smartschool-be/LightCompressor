@@ -110,16 +110,20 @@ object VideoCompressor : CoroutineScope by MainScope() {
                 val job = async { getMediaPath(context, uris[i]) }
                 val path = job.await()
 
-                val desFile = saveVideoFile(
-                    context, path, sharedStorageConfiguration,
-                    appSpecificStorageConfiguration, isStreamable
-                )
-
-                if (isStreamable)
-                    streamableFile = saveVideoFile(
+                var desFile: File?
+                withContext(Dispatchers.IO) {
+                    desFile = saveVideoFile(
                         context, path, sharedStorageConfiguration,
-                        appSpecificStorageConfiguration, null
+                        appSpecificStorageConfiguration, isStreamable
                     )
+
+                    if (isStreamable) {
+                        streamableFile = saveVideoFile(
+                            context, path, sharedStorageConfiguration,
+                            appSpecificStorageConfiguration, null
+                        )
+                    }
+                }
 
                 desFile?.let {
                     isRunning = true
@@ -128,7 +132,7 @@ object VideoCompressor : CoroutineScope by MainScope() {
                         i,
                         context,
                         uris[i],
-                        desFile.path,
+                        it.path,
                         streamableFile?.path,
                         configuration,
                         listener,
